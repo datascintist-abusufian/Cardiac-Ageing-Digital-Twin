@@ -1,9 +1,57 @@
 # Cardiac Ageing Digital Twin
 
+[![tests](https://github.com/datascintist-abusufian/Cardiac-Ageing-Digital-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/datascintist-abusufian/Cardiac-Ageing-Digital-Twin/actions/workflows/ci.yml)
+
 > A multiscale digital-twin concept that links **cardiomyocyte ageing**, measured with AI on
 > human iPSC-derived cardiomyocytes, to **tissue and whole-heart behaviour**.
 > Concept and design by **Md Abu Sufian**, PhD researcher, University of East London
 > ([abusufian.dev](https://abusufian.dev)).
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/datascintist-abusufian/Cardiac-Ageing-Digital-Twin.git
+cd Cardiac-Ageing-Digital-Twin
+pip install -r requirements.txt
+python examples/young_vs_aged.py     # young vs aged simulation + figure
+pytest -q                            # 8 tests
+```
+
+```python
+from cadt import AgeingStateVector, map_to_tissue, simulate
+
+asv = AgeingStateVector(motion_dysfunction=0.7, nuclear_irregularity=0.6, calcium_decay_delay=0.65)
+tissue = map_to_tissue(asv)          # ageing scores -> tissue parameters
+result = simulate(tissue)            # 2D tissue simulation
+print(result["metrics"])             # conduction velocity, APD, activation time, ...
+```
+
+### First result: young vs aged tissue
+
+![Young vs aged activation maps](outputs/young_vs_aged.png)
+
+| Measure (illustrative example) | Young | Aged | Change |
+|---|---|---|---|
+| Conduction velocity | 1.24 | 0.87 | −30% |
+| Action potential duration | 22.9 | 27.6 | +21% |
+| Time to activate the whole tissue | 95.1 | 141.5 | +49% |
+| Fibrosis | 2% | 18% | — |
+
+Units are dimensionless. The aged scores come from `examples/aged_state_example.json` and are
+**illustrative, not measured**. The mapping weights are placeholder assumptions until
+calibrated (roadmap phase 5).
+
+### Repository layout
+
+| Path | What it does |
+|---|---|
+| `cadt/ageing_state.py` | Ageing State Vector: validation, JSON load / save (`ageing-state/v0.1`) |
+| `cadt/mapping.py` | Rule-based ageing → tissue mapping, with Monte Carlo uncertainty |
+| `cadt/tissue_sim.py` | 2D Aliev–Panfilov tissue model with patchy fibrosis |
+| `examples/young_vs_aged.py` | End-to-end demo; writes `outputs/` |
+| `tests/test_cadt.py` | Checks directions of change, bounds, JSON round-trip, simulation |
 
 ---
 
@@ -180,15 +228,15 @@ The organ viewer reads this file and sets its matching visual and simulation par
 
 ## 6. Roadmap
 
-| Phase | Goal |
-|---|---|
-| 0 | This concept document; agree the JSON interface |
-| 1 | Python pipeline producing an ASV from iPSC-CM motion + nuclear images |
-| 2 | Rule-based ASV → tissue parameter mapping with literature ranges |
-| 3 | Interactive 3D heart viewer with an "age / senescence" slider driven by the JSON file |
-| 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios |
-| 5 | Validation against held-out senescence markers and electrophysiology data |
-| 6 | Optional: patient-specific geometry from cardiac MRI segmentation |
+| Phase | Goal | Status |
+|---|---|---|
+| 0 | This concept document; agree the JSON interface | ✅ Done |
+| 1 | Python pipeline producing an ASV from iPSC-CM motion + nuclear images | ⏳ Planned (ASV schema in place) |
+| 2 | Rule-based ASV → tissue parameter mapping with literature ranges | ✅ First version (placeholder weights) |
+| 3 | Interactive 3D heart viewer with an "age / senescence" slider driven by the JSON file | ⏳ Planned (2D tissue simulation done) |
+| 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios | 🟡 Young-vs-aged 2D comparison done |
+| 5 | Validation against held-out senescence markers and electrophysiology data | ⏳ Planned |
+| 6 | Optional: patient-specific geometry from cardiac MRI segmentation | ⏳ Planned |
 
 ---
 
