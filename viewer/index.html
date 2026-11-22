@@ -61,6 +61,11 @@
     <input id="ni" type="range" min="0" max="1" step="0.01" value="0">
     <label><span>Calcium decay delay</span><span id="cdVal"></span></label>
     <input id="cd" type="range" min="0" max="1" step="0.01" value="0">
+    <label><span>Mapping</span><span></span></label>
+    <select id="ruleset" style="width:100%;font:inherit;font-size:12.5px;padding:5px;border:1px solid var(--line);border-radius:6px;background:#fff">
+      <option value="literature_v1">Literature-calibrated (v1)</option>
+      <option value="placeholder">Placeholder (phases 0–4)</option>
+    </select>
     <div class="row">
       <button id="loadPipeline" title="outputs/phase1_aged_state.json">Load pipeline output</button>
       <label class="file">Open JSON…<input id="file" type="file" accept=".json,application/json"></label>
@@ -83,8 +88,8 @@
 
     <p class="note">Generic, simplified biventricular geometry (not patient-specific). Activation spreads
       over the heart surface from apical sites and routes around non-conducting fibrosis.
-      Mapping weights mirror <code>cadt/mapping.py</code> and are placeholder assumptions until
-      calibrated. Times are model units (illustrative). For education and research only.</p>
+      The default mapping is calibrated to published young-vs-old measurements
+      (<code>cadt/calibration.py</code>; mixed species, ranges in the README). Times are model units (illustrative). For education and research only.</p>
   </aside>
   <main id="stage">
     <div class="status" id="status"></div>
@@ -92,9 +97,9 @@
   </main>
 </div>
 
-<!-- Mapping rules: must stay identical to cadt/mapping.py (checked by tests/test_viewer.py). -->
+<!-- Mapping rule sets: must stay identical to cadt/calibration.RULESETS (checked by tests/test_viewer.py). -->
 <script type="application/json" id="rules">
-{"conduction_velocity_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": -0.15, "nuclear_irregularity": -0.1, "calcium_decay_delay": -0.1}, "bounds": [0.5, 1.0]}, "apd_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": 0.05, "nuclear_irregularity": 0.05, "calcium_decay_delay": 0.2}, "bounds": [1.0, 1.4]}, "calcium_decay_scale": {"baseline": 1.0, "weights": {"calcium_decay_delay": 0.5}, "bounds": [1.0, 1.8]}, "contractility_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": -0.3, "calcium_decay_delay": -0.1}, "bounds": [0.5, 1.0]}, "fibrosis_fraction": {"baseline": 0.02, "weights": {"motion_dysfunction": 0.08, "nuclear_irregularity": 0.15, "calcium_decay_delay": 0.02}, "bounds": [0.0, 0.35]}, "fibrosis_heterogeneity": {"baseline": 0.1, "weights": {"motion_dysfunction": 0.3, "nuclear_irregularity": 0.4}, "bounds": [0.0, 1.0]}}
+{"literature_v1": {"conduction_velocity_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": -0.042857, "nuclear_irregularity": -0.028571, "calcium_decay_delay": -0.028571}, "bounds": [0.9, 1.0]}, "apd_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": 0.025, "nuclear_irregularity": 0.025, "calcium_decay_delay": 0.1}, "bounds": [1.0, 1.15]}, "calcium_decay_scale": {"baseline": 1.0, "weights": {"calcium_decay_delay": 0.08}, "bounds": [1.0, 1.08]}, "contractility_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": 0.0, "calcium_decay_delay": 0.0}, "bounds": [1.0, 1.0]}, "fibrosis_fraction": {"baseline": 0.028, "weights": {"motion_dysfunction": 0.01344, "nuclear_irregularity": 0.0252, "calcium_decay_delay": 0.00336}, "bounds": [0.028, 0.07]}, "fibrosis_heterogeneity": {"baseline": 0.1, "weights": {"motion_dysfunction": 0.3, "nuclear_irregularity": 0.4}, "bounds": [0.0, 1.0]}}, "placeholder": {"conduction_velocity_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": -0.15, "nuclear_irregularity": -0.1, "calcium_decay_delay": -0.1}, "bounds": [0.5, 1.0]}, "apd_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": 0.05, "nuclear_irregularity": 0.05, "calcium_decay_delay": 0.2}, "bounds": [1.0, 1.4]}, "calcium_decay_scale": {"baseline": 1.0, "weights": {"calcium_decay_delay": 0.5}, "bounds": [1.0, 1.8]}, "contractility_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": -0.3, "calcium_decay_delay": -0.1}, "bounds": [0.5, 1.0]}, "fibrosis_fraction": {"baseline": 0.02, "weights": {"motion_dysfunction": 0.08, "nuclear_irregularity": 0.15, "calcium_decay_delay": 0.02}, "bounds": [0.0, 0.35]}, "fibrosis_heterogeneity": {"baseline": 0.1, "weights": {"motion_dysfunction": 0.3, "nuclear_irregularity": 0.4}, "bounds": [0.0, 1.0]}}}
 </script>
 
 <script type="importmap">
@@ -113,7 +118,8 @@ const BASE_APD = 250;          // ms-like
 const CYCLE = 900;             // ms-like beat cycle
 const TARGET_YOUNG_TAT = 80;   // young total activation time, ms-like
 const SCORES = ["motion_dysfunction", "nuclear_irregularity", "calcium_decay_delay"];
-const RULES = JSON.parse(document.getElementById("rules").textContent);
+const RULESETS = JSON.parse(document.getElementById("rules").textContent);
+let RULES = RULESETS.literature_v1;
 
 function mapToTissue(asv) {
   const out = {};
@@ -226,12 +232,14 @@ function solve(tissue) {
   res.apd = BASE_APD * tissue.apd_scale;
   return res;
 }
-{ // calibrate speed on the young heart
-  const t0 = mapToTissue({ motion_dysfunction: 0, nuclear_irregularity: 0, calcium_decay_delay: 0 });
-  SPEED0 = 1; const r = solve(t0); SPEED0 = r.tat / TARGET_YOUNG_TAT;
-}
 const YOUNG_ASV = { motion_dysfunction: 0, nuclear_irregularity: 0, calcium_decay_delay: 0 };
-const YOUNG_T = mapToTissue(YOUNG_ASV), YOUNG_R = solve(YOUNG_T);
+let YOUNG_T, YOUNG_R;
+function useRuleset(name) {   // speed calibrated so the young heart activates in TARGET_YOUNG_TAT
+  RULES = RULESETS[name]; SPEED0 = 1;
+  const r = solve(mapToTissue(YOUNG_ASV)); SPEED0 = r.tat / TARGET_YOUNG_TAT;
+  YOUNG_T = mapToTissue(YOUNG_ASV); YOUNG_R = solve(YOUNG_T);
+}
+useRuleset("literature_v1");
 
 // ---------- scene ----------
 const stage = document.getElementById("stage");
@@ -350,6 +358,7 @@ $("age").addEventListener("input", e => { const a = +e.target.value; $("ageVal")
   setASV({ motion_dysfunction: a, nuclear_irregularity: a, calcium_decay_delay: a }, true); });
 for (const [id, k] of [["md", "motion_dysfunction"], ["ni", "nuclear_irregularity"], ["cd", "calcium_decay_delay"]])
   $(id).addEventListener("input", e => setASV({ ...asv, [k]: +e.target.value }));
+$("ruleset").addEventListener("change", e => { useRuleset(e.target.value); setASV(asv); legend(); });
 $("speed").addEventListener("input", e => $("speedVal").textContent = fmt(e.target.value, 2) + "×");
 $("modeAnim").onclick = () => { mode = "anim"; $("modeAnim").classList.add("on"); $("modeMap").classList.remove("on"); legend(); };
 $("modeMap").onclick = () => { mode = "map"; $("modeMap").classList.add("on"); $("modeAnim").classList.remove("on"); paintMap(); legend(); };
@@ -368,8 +377,9 @@ $("loadPipeline").onclick = async () => {
 $("file").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return;
   try { loadDoc(JSON.parse(await f.text()), f.name); } catch (err) { $("status").textContent = "Invalid file: " + err.message; } });
 
-// URL parameter, e.g. ?age=0.7  or  ?md=0.7&ni=0.6&cd=0.65&mode=map
+// URL parameter, e.g. ?age=0.7  or  ?md=0.7&ni=0.6&cd=0.65&mode=map  (&rules=placeholder)
 const q = new URLSearchParams(location.search);
+if (q.get("rules") in RULESETS) { $("ruleset").value = q.get("rules"); useRuleset(q.get("rules")); }
 if (q.has("age")) { const a = Math.min(1, Math.max(0, +q.get("age"))); setASV({ motion_dysfunction: a, nuclear_irregularity: a, calcium_decay_delay: a }); }
 else if (q.has("md") || q.has("ni") || q.has("cd")) setASV({ motion_dysfunction: +(q.get("md") || 0), nuclear_irregularity: +(q.get("ni") || 0), calcium_decay_delay: +(q.get("cd") || 0) });
 else setASV(YOUNG_ASV);
@@ -387,7 +397,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__twin = { mapToTissue, get result() { return result; }, get tissue() { return tissue; }, YOUNG_R, setASV };
+window.__twin = { mapToTissue, get result() { return result; }, get tissue() { return tissue; }, get YOUNG_R() { return YOUNG_R; }, setASV, useRuleset };
 </script>
 </body>
 </html>
