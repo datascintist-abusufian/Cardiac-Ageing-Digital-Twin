@@ -74,13 +74,18 @@ def _apply(rule: Rule, scores: dict) -> float:
     return float(np.clip(value, *rule.bounds))
 
 
-def map_to_tissue(asv: AgeingStateVector) -> dict:
-    """Map an ASV to tissue parameters (point estimate)."""
+def map_to_tissue(asv: AgeingStateVector, rules: dict | None = None) -> dict:
+    """Map an ASV to tissue parameters (point estimate).
+
+    `rules` defaults to the placeholder RULES; pass `calibration.LITERATURE_RULES`
+    for the literature-calibrated mapping.
+    """
     scores = asv.drivers()
-    return {name: round(_apply(rule, scores), 4) for name, rule in RULES.items()}
+    return {name: round(_apply(rule, scores), 4) for name, rule in (rules or RULES).items()}
 
 
-def map_with_uncertainty(asv: AgeingStateVector, n: int = 2000, seed: int = 0) -> dict:
+def map_with_uncertainty(asv: AgeingStateVector, n: int = 2000, seed: int = 0,
+                         rules: dict | None = None) -> dict:
     """Propagate per-score uncertainty (asv.sd) by Monte Carlo.
 
     Returns {param: {"mean", "ci95": [low, high]}}. Scores without an sd are fixed.
@@ -92,7 +97,7 @@ def map_with_uncertainty(asv: AgeingStateVector, n: int = 2000, seed: int = 0) -
         for name in DRIVER_FIELDS
     }
     out = {}
-    for pname, rule in RULES.items():
+    for pname, rule in (rules or RULES).items():
         vals = rule.baseline + sum(w * samples[s] for s, w in rule.weights.items())
         vals = np.clip(vals, *rule.bounds)
         lo, hi = np.percentile(vals, [2.5, 97.5])
