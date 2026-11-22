@@ -3,7 +3,7 @@
   "young_reference": {
     "mean": {
       "interval_cv": 0.03168553489208266,
-      "amplitude_cv": 0.053561016106478565,
+      "amplitude_cv": 0.05356101610647855,
       "contraction_velocity": 3.470922003240463,
       "relaxation_velocity": 1.9349225609823388,
       "area_mean": 283.975,
@@ -15,21 +15,21 @@
     },
     "sd": {
       "interval_cv": 0.0109751213627421,
-      "amplitude_cv": 0.007968252704168396,
+      "amplitude_cv": 0.007968252704168389,
       "contraction_velocity": 0.2046932648744263,
-      "relaxation_velocity": 0.09643578977204728,
+      "relaxation_velocity": 0.09643578977204735,
       "area_mean": 4.230507830279667,
       "area_cv": 0.01054955763468169,
       "circularity_mean": 0.0020718033347573534,
       "solidity_mean": 0.0006868677707617893,
-      "decay_tau_s": 0.004844426750687452,
+      "decay_tau_s": 0.004844426750687455,
       "cd50_s": 0.0032403703492039334
     },
     "aged_anchor_mean": {
       "interval_cv": 0.3546675977600822,
       "amplitude_cv": 0.29609114343945075,
       "contraction_velocity": 1.629045245216604,
-      "relaxation_velocity": 0.7063061067909158,
+      "relaxation_velocity": 0.706306106790916,
       "area_mean": 622.913888888889,
       "area_cv": 0.31822084553476226,
       "circularity_mean": 0.8311302845844564,
