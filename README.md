@@ -2,6 +2,8 @@
 
 [![tests](https://github.com/datascintist-abusufian/Cardiac-Ageing-Digital-Twin/actions/workflows/ci.yml/badge.svg)](https://github.com/datascintist-abusufian/Cardiac-Ageing-Digital-Twin/actions/workflows/ci.yml)
 
+**[▶ Open the live 3D heart viewer](https://datascintist-abusufian.github.io/Cardiac-Ageing-Digital-Twin/viewer/)**: move the age / senescence slider and watch conduction slow and fibrosis appear.
+
 > A multiscale digital-twin concept that links **cardiomyocyte ageing**, measured with AI on
 > human iPSC-derived cardiomyocytes, to **tissue and whole-heart behaviour**.
 > Concept and design by **Md Abu Sufian**, PhD researcher, University of East London
@@ -17,7 +19,9 @@ cd Cardiac-Ageing-Digital-Twin
 pip install -r requirements.txt
 python examples/young_vs_aged.py     # young vs aged simulation + figure
 python examples/phase1_pipeline.py   # raw cell data -> ageing scores -> tissue
-pytest -q                            # 15 tests
+pytest -q                            # 16 tests
+# 3D viewer: open viewer/index.html through any local web server, e.g.
+python -m http.server 8000           # then visit http://localhost:8000/viewer/
 ```
 
 ```python
@@ -66,6 +70,21 @@ without data. The extractors are classical, transparent baselines; learned model
 (CardioFlowFormer for motion, NucAgeAI for nuclei) can replace them as long as they return
 the same feature names.
 
+### Phase 3: interactive 3D heart viewer
+
+**[Open the live viewer](https://datascintist-abusufian.github.io/Cardiac-Ageing-Digital-Twin/viewer/)** (runs in the browser, nothing to install).
+
+- **Age / senescence slider**, or set the three ageing scores separately.
+- **Load pipeline output**: reads `outputs/phase1_aged_state.json` written by the phase-1 pipeline; **Open JSON…** loads any ageing-state file.
+- **Beating** view: the activation wave spreads from apical sites, routes around fibrosis (grey), and the heart contracts; relaxation slows as calcium decay slows.
+- **Activation map** view: colour shows when each point is activated; compare young and aged at the same scale.
+- Live tables of tissue parameters and whole-heart results (total activation time, effective conduction, APD, fibrotic surface).
+- Shareable states through the URL, e.g. [`?age=0.8&mode=map`](https://datascintist-abusufian.github.io/Cardiac-Ageing-Digital-Twin/viewer/?age=0.8&mode=map).
+
+The viewer uses the same mapping rules as `cadt/mapping.py`; a test (`tests/test_viewer.py`) fails if
+the two copies ever differ. The geometry is a generic, simplified biventricular shape, not
+patient-specific.
+
 ### Repository layout
 
 | Path | What it does |
@@ -80,7 +99,8 @@ the same feature names.
 | `cadt/synthetic.py` | Synthetic videos, nuclei and calcium traces for demos and tests |
 | `examples/young_vs_aged.py` | Ageing scores → tissue → simulation demo |
 | `examples/phase1_pipeline.py` | Raw cell data → features → ageing scores → tissue → simulation |
-| `tests/` | 15 tests: feature recovery, directions of change, bounds, JSON round-trip, simulation |
+| `viewer/index.html` | Interactive 3D heart viewer (three.js), live on GitHub Pages |
+| `tests/` | 16 tests: feature recovery, directions of change, bounds, JSON round-trip, simulation, viewer rules |
 
 ---
 
@@ -262,8 +282,8 @@ The organ viewer reads this file and sets its matching visual and simulation par
 | 0 | This concept document; agree the JSON interface | ✅ Done |
 | 1 | Python pipeline producing an ASV from iPSC-CM motion + nuclear images | 🟡 Classical pipeline done on synthetic data; real recordings and learned models next |
 | 2 | Rule-based ASV → tissue parameter mapping with literature ranges | ✅ First version (placeholder weights) |
-| 3 | Interactive 3D heart viewer with an "age / senescence" slider driven by the JSON file | ⏳ Planned (2D tissue simulation done) |
-| 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios | 🟡 Young-vs-aged 2D comparison done |
+| 3 | Interactive 3D heart viewer with an "age / senescence" slider driven by the JSON file | ✅ [Live viewer](https://datascintist-abusufian.github.io/Cardiac-Ageing-Digital-Twin/viewer/) |
+| 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios | 🟡 Young-vs-aged comparison done (2D and 3D); re-entry scenarios next |
 | 5 | Validation against held-out senescence markers and electrophysiology data | ⏳ Planned |
 | 6 | Optional: patient-specific geometry from cardiac MRI segmentation | ⏳ Planned |
 
