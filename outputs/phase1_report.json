@@ -1,0 +1,176 @@
+{
+  "note": "synthetic data, for pipeline demonstration only",
+  "young_reference": {
+    "mean": {
+      "interval_cv": 0.03168553489208266,
+      "amplitude_cv": 0.053561016106478565,
+      "contraction_velocity": 3.470922003240463,
+      "relaxation_velocity": 1.9349225609823388,
+      "area_mean": 283.975,
+      "area_cv": 0.11662294206832213,
+      "circularity_mean": 0.9861836001089049,
+      "solidity_mean": 0.9441623727692781,
+      "decay_tau_s": 0.12644277467348577,
+      "cd50_s": 0.0925
+    },
+    "sd": {
+      "interval_cv": 0.0109751213627421,
+      "amplitude_cv": 0.007968252704168396,
+      "contraction_velocity": 0.2046932648744263,
+      "relaxation_velocity": 0.09643578977204728,
+      "area_mean": 4.230507830279667,
+      "area_cv": 0.01054955763468169,
+      "circularity_mean": 0.0020718033347573534,
+      "solidity_mean": 0.0006868677707617893,
+      "decay_tau_s": 0.004844426750687452,
+      "cd50_s": 0.0032403703492039334
+    },
+    "aged_anchor_mean": {
+      "interval_cv": 0.3546675977600822,
+      "amplitude_cv": 0.29609114343945075,
+      "contraction_velocity": 1.629045245216604,
+      "relaxation_velocity": 0.7063061067909158,
+      "area_mean": 622.913888888889,
+      "area_cv": 0.31822084553476226,
+      "circularity_mean": 0.8311302845844564,
+      "solidity_mean": 0.8959506717949791,
+      "decay_tau_s": 0.22278894211225553,
+      "cd50_s": 0.15910833333333335
+    }
+  },
+  "conditions": {
+    "day-30 (synthetic)": {
+      "ageing_state_vector": {
+        "motion_dysfunction": 0.0366,
+        "nuclear_irregularity": 0.002,
+        "calcium_decay_delay": 0.0058,
+        "senescence_confidence": null,
+        "sd": {
+          "motion_dysfunction": 0.0235,
+          "nuclear_irregularity": 0.0045,
+          "calcium_decay_delay": 0.013
+        }
+      },
+      "feature_z_scores": {
+        "motion_dysfunction": {
+          "interval_cv": 1.055,
+          "amplitude_cv": -1.08,
+          "contraction_velocity": 0.74,
+          "relaxation_velocity": 0.811
+        },
+        "nuclear_irregularity": {
+          "area_mean": 0.951,
+          "area_cv": -0.79,
+          "circularity_mean": -0.366,
+          "solidity_mean": -1.062
+        },
+        "calcium_decay_delay": {
+          "decay_tau_s": -0.766,
+          "cd50_s": -0.772
+        }
+      },
+      "tissue_parameters": {
+        "conduction_velocity_scale": 0.9937,
+        "apd_scale": 1.0031,
+        "calcium_decay_scale": 1.0029,
+        "contractility_scale": 0.9884,
+        "fibrosis_fraction": 0.0233,
+        "fibrosis_heterogeneity": 0.1118
+      }
+    },
+    "day-60 (synthetic)": {
+      "ageing_state_vector": {
+        "motion_dysfunction": 0.4542,
+        "nuclear_irregularity": 0.206,
+        "calcium_decay_delay": 0.3069,
+        "senescence_confidence": null,
+        "sd": {
+          "motion_dysfunction": 0.0333,
+          "nuclear_irregularity": 0.0176,
+          "calcium_decay_delay": 0.0786
+        }
+      },
+      "feature_z_scores": {
+        "motion_dysfunction": {
+          "interval_cv": 9.552,
+          "amplitude_cv": 13.615,
+          "contraction_velocity": 4.61,
+          "relaxation_velocity": 6.783
+        },
+        "nuclear_irregularity": {
+          "area_mean": 24.805,
+          "area_cv": 5.831,
+          "circularity_mean": 11.506,
+          "solidity_mean": 3.903
+        },
+        "calcium_decay_delay": {
+          "decay_tau_s": 6.115,
+          "cd50_s": 6.299
+        }
+      },
+      "tissue_parameters": {
+        "conduction_velocity_scale": 0.8806,
+        "apd_scale": 1.0944,
+        "calcium_decay_scale": 1.1535,
+        "contractility_scale": 0.8331,
+        "fibrosis_fraction": 0.0934,
+        "fibrosis_heterogeneity": 0.3187
+      }
+    },
+    "day-90 (synthetic)": {
+      "ageing_state_vector": {
+        "motion_dysfunction": 0.7847,
+        "nuclear_irregularity": 0.5984,
+        "calcium_decay_delay": 0.6571,
+        "senescence_confidence": null,
+        "sd": {
+          "motion_dysfunction": 0.1289,
+          "nuclear_irregularity": 0.0596,
+          "calcium_decay_delay": 0.0851
+        }
+      },
+      "feature_z_scores": {
+        "motion_dysfunction": {
+          "interval_cv": 16.513,
+          "amplitude_cv": 28.556,
+          "contraction_velocity": 7.305,
+          "relaxation_velocity": 10.542
+        },
+        "nuclear_irregularity": {
+          "area_mean": 53.1,
+          "area_cv": 12.92,
+          "circularity_mean": 42.62,
+          "solidity_mean": 34.071
+        },
+        "calcium_decay_delay": {
+          "decay_tau_s": 13.049,
+          "cd50_s": 13.527
+        }
+      },
+      "tissue_parameters": {
+        "conduction_velocity_scale": 0.7567,
+        "apd_scale": 1.2006,
+        "calcium_decay_scale": 1.3285,
+        "contractility_scale": 0.6989,
+        "fibrosis_fraction": 0.1857,
+        "fibrosis_heterogeneity": 0.5748
+      }
+    }
+  },
+  "simulation": {
+    "day-30": {
+      "conduction_velocity": 1.2254,
+      "apd_median": 23.0,
+      "total_activation_time": 96.9,
+      "fraction_activated": 1.0,
+      "fibrosis_fraction_actual": 0.0233
+    },
+    "day-90": {
+      "conduction_velocity": 0.8481,
+      "apd_median": 27.7,
+      "total_activation_time": 144.35,
+      "fraction_activated": 1.0,
+      "fibrosis_fraction_actual": 0.1857
+    }
+  }
+}

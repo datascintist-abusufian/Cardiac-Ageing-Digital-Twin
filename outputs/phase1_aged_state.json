@@ -1,0 +1,23 @@
+{
+  "schema": "ageing-state/v0.1",
+  "source": "synthetic phase-1 pipeline",
+  "ageing_state_vector": {
+    "motion_dysfunction": 0.7847,
+    "nuclear_irregularity": 0.5984,
+    "calcium_decay_delay": 0.6571,
+    "senescence_confidence": null,
+    "sd": {
+      "motion_dysfunction": 0.1289,
+      "nuclear_irregularity": 0.0596,
+      "calcium_decay_delay": 0.0851
+    }
+  },
+  "tissue_parameters": {
+    "conduction_velocity_scale": 0.7567,
+    "apd_scale": 1.2006,
+    "calcium_decay_scale": 1.3285,
+    "contractility_scale": 0.6989,
+    "fibrosis_fraction": 0.1857,
+    "fibrosis_heterogeneity": 0.5748
+  }
+}
