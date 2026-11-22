@@ -27,6 +27,7 @@ behaves, what should the heart built from them look like, conduct like and beat 
 ## 2. Multiscale architecture
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryBorderColor': '#333333', 'primaryTextColor': '#000000', 'lineColor': '#333333', 'clusterBkg': '#ffffff', 'clusterBorder': '#333333', 'background': '#ffffff'}}}%%
 flowchart TB
     subgraph L1["Layer 1 — Cell (iPSC-derived cardiomyocytes)"]
         A1["Time-lapse brightfield video<br/>(beating motion)"]
@@ -64,6 +65,13 @@ flowchart TB
     C1 & C2 --> D1
     C4 --> D2
     C1 & C2 & C4 --> D3
+
+    classDef white fill:#ffffff,stroke:#333333,stroke-width:1px,color:#000000
+    class A1,A2,A3,A4,B1,B2,B3,C1,C2,C3,C4,D1,D2,D3 white
+    style L1 fill:#ffffff,stroke:#333333,color:#000000
+    style AI fill:#ffffff,stroke:#333333,color:#000000
+    style L2 fill:#ffffff,stroke:#333333,color:#000000
+    style L3 fill:#ffffff,stroke:#333333,color:#000000
 ```
 
 ### Layer 1 — Cell
