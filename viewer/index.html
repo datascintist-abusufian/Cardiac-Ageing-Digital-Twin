@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cardiac Ageing Digital Twin — 3D viewer</title>
+<style>
+  :root { --ink:#1d2433; --muted:#5b6475; --line:#d9dde5; --accent:#08519c; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:#fff; color:var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .app { display:grid; grid-template-columns: 340px 1fr; height:100vh; }
+  aside { border-right:1px solid var(--line); padding:18px 18px 24px; overflow-y:auto; }
+  h1 { font-size:17px; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:12.5px; margin:0 0 14px; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    margin:18px 0 8px; }
+  label { display:flex; justify-content:space-between; font-size:13px; margin-top:8px; }
+  label span:last-child { font-variant-numeric: tabular-nums; color:var(--muted); }
+  input[type=range] { width:100%; accent-color: var(--accent); }
+  .big label { font-weight:600; font-size:14px; }
+  .row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  button, .file { font:inherit; font-size:12.5px; padding:6px 10px; border:1px solid var(--line);
+    background:#fff; border-radius:6px; cursor:pointer; color:var(--ink); }
+  button:hover, .file:hover { border-color:#9aa3b2; }
+  button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .file input { display:none; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding:4px 4px; border-bottom:1px solid #eef0f4; text-align:right; }
+  th:first-child, td:first-child { text-align:left; }
+  th { color:var(--muted); font-weight:500; }
+  td.up { color:#b4361f; } td.down { color:#1f5fb4; }
+  .note { font-size:11.5px; color:var(--muted); margin-top:14px; }
+  main { position:relative; }
+  canvas { display:block; }
+  .legend { position:absolute; left:16px; bottom:14px; background:rgba(255,255,255,.92);
+    border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12px; }
+  .bar { width:200px; height:10px; border-radius:3px; margin:4px 0 2px; }
+  .ticks { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; }
+  .swatch { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px; margin-right:4px; }
+  .status { position:absolute; right:16px; top:12px; font-size:12px; color:var(--muted); }
+  @media (max-width: 800px) { .app { grid-template-columns: 1fr; grid-template-rows: auto 60vh; height:auto; }
+    aside { border-right:0; border-bottom:1px solid var(--line); } main { height:60vh; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Cardiac Ageing Digital Twin</h1>
+    <p class="sub">From cardiomyocyte ageing scores to whole-heart conduction. Md Abu Sufian, UEL.</p>
+
+    <div class="big">
+      <label><span>Age / senescence</span><span id="ageVal">0.00</span></label>
+      <input id="age" type="range" min="0" max="1" step="0.01" value="0">
+    </div>
+
+    <h2>Ageing State Vector</h2>
+    <label><span>Motion dysfunction</span><span id="mdVal"></span></label>
+    <input id="md" type="range" min="0" max="1" step="0.01" value="0">
+    <label><span>Nuclear irregularity</span><span id="niVal"></span></label>
+    <input id="ni" type="range" min="0" max="1" step="0.01" value="0">
+    <label><span>Calcium decay delay</span><span id="cdVal"></span></label>
+    <input id="cd" type="range" min="0" max="1" step="0.01" value="0">
+    <div class="row">
+      <button id="loadPipeline" title="outputs/phase1_aged_state.json">Load pipeline output</button>
+      <label class="file">Open JSON…<input id="file" type="file" accept=".json,application/json"></label>
+    </div>
+
+    <h2>View</h2>
+    <div class="row">
+      <button id="modeAnim" class="on">Beating</button>
+      <button id="modeMap">Activation map</button>
+      <button id="pause">Pause</button>
+    </div>
+    <label><span>Playback speed</span><span id="speedVal">0.5×</span></label>
+    <input id="speed" type="range" min="0.1" max="1.5" step="0.05" value="0.5">
+
+    <h2>Tissue parameters</h2>
+    <table id="tissue"><thead><tr><th></th><th>Young</th><th>Now</th></tr></thead><tbody></tbody></table>
+
+    <h2>Whole-heart result</h2>
+    <table id="result"><thead><tr><th></th><th>Young</th><th>Now</th><th>Δ</th></tr></thead><tbody></tbody></table>
+
+    <p class="note">Generic, simplified biventricular geometry (not patient-specific). Activation spreads
+      over the heart surface from apical sites and routes around non-conducting fibrosis.
+      Mapping weights mirror <code>cadt/mapping.py</code> and are placeholder assumptions until
+      calibrated. Times are model units (illustrative). For education and research only.</p>
+  </aside>
+  <main id="stage">
+    <div class="status" id="status"></div>
+    <div class="legend" id="legend"></div>
+  </main>
+</div>
+
+<!-- Mapping rules: must stay identical to cadt/mapping.py (checked by tests/test_viewer.py). -->
+<script type="application/json" id="rules">
+{"conduction_velocity_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": -0.15, "nuclear_irregularity": -0.1, "calcium_decay_delay": -0.1}, "bounds": [0.5, 1.0]}, "apd_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": 0.05, "nuclear_irregularity": 0.05, "calcium_decay_delay": 0.2}, "bounds": [1.0, 1.4]}, "calcium_decay_scale": {"baseline": 1.0, "weights": {"calcium_decay_delay": 0.5}, "bounds": [1.0, 1.8]}, "contractility_scale": {"baseline": 1.0, "weights": {"motion_dysfunction": -0.3, "calcium_decay_delay": -0.1}, "bounds": [0.5, 1.0]}, "fibrosis_fraction": {"baseline": 0.02, "weights": {"motion_dysfunction": 0.08, "nuclear_irregularity": 0.15, "calcium_decay_delay": 0.02}, "bounds": [0.0, 0.35]}, "fibrosis_heterogeneity": {"baseline": 0.1, "weights": {"motion_dysfunction": 0.3, "nuclear_irregularity": 0.4}, "bounds": [0.0, 1.0]}}
+</script>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+// ---------- model constants (illustrative model units) ----------
+const BASE_APD = 250;          // ms-like
+const CYCLE = 900;             // ms-like beat cycle
+const TARGET_YOUNG_TAT = 80;   // young total activation time, ms-like
+const SCORES = ["motion_dysfunction", "nuclear_irregularity", "calcium_decay_delay"];
+const RULES = JSON.parse(document.getElementById("rules").textContent);
+
+function mapToTissue(asv) {
+  const out = {};
+  for (const [name, r] of Object.entries(RULES)) {
+    let v = r.baseline;
+    for (const [s, w] of Object.entries(r.weights)) v += w * asv[s];
+    out[name] = Math.min(r.bounds[1], Math.max(r.bounds[0], v));
+  }
+  return out;
+}
+
+// ---------- seeded RNG ----------
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// ---------- geometry: simplified biventricular heart ----------
+function chamber(rx, ry, rz, cx, cy, cz, baseY) {
+  const g = new THREE.SphereGeometry(1, 120, 80);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    let x = p.getX(i) * rx, y = p.getY(i) * ry, z = p.getZ(i) * rz;
+    if (y > baseY) y = baseY + (y - baseY) * 0.08;      // flatten the base (valve plane)
+    p.setXYZ(i, x + cx, y + cy, z + cz);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+// Graph over unique vertex positions (sphere seams duplicate vertices).
+function buildGraph(geom) {
+  const p = geom.attributes.position, idx = geom.index.array;
+  const key = i => `${p.getX(i).toFixed(5)},${p.getY(i).toFixed(5)},${p.getZ(i).toFixed(5)}`;
+  const uid = new Int32Array(p.count), map = new Map(); let n = 0;
+  for (let i = 0; i < p.count; i++) { const k = key(i); if (!map.has(k)) map.set(k, n++); uid[i] = map.get(k); }
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < p.count; i++) { const u = uid[i]; pos[3*u] = p.getX(i); pos[3*u+1] = p.getY(i); pos[3*u+2] = p.getZ(i); }
+  const adj = Array.from({ length: n }, () => new Map());
+  const add = (a, b) => { if (a === b) return; const d = Math.hypot(pos[3*a]-pos[3*b], pos[3*a+1]-pos[3*b+1], pos[3*a+2]-pos[3*b+2]);
+    adj[a].set(b, d); adj[b].set(a, d); };
+  for (let t = 0; t < idx.length; t += 3) { const a = uid[idx[t]], b = uid[idx[t+1]], c = uid[idx[t+2]]; add(a,b); add(b,c); add(c,a); }
+  return { n, uid, pos, adj: adj.map(m => [...m.entries()]) };
+}
+
+// Multi-source Dijkstra with a binary heap. blocked[i] = non-conducting.
+function dijkstra(G, sources, blocked, speed) {
+  const dist = new Float64Array(G.n).fill(Infinity);
+  const heap = []; const push = (d, i) => { heap.push([d, i]); let k = heap.length - 1;
+    while (k > 0) { const pk = (k - 1) >> 1; if (heap[pk][0] <= heap[k][0]) break; [heap[pk], heap[k]] = [heap[k], heap[pk]]; k = pk; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let k = 0;
+      for (;;) { const l = 2*k+1, r = l+1; let m = k; if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === k) break; [heap[m], heap[k]] = [heap[k], heap[m]]; k = m; } }
+    return top; };
+  for (const s of sources) if (!blocked[s]) { dist[s] = 0; push(0, s); }
+  while (heap.length) { const [d, i] = pop(); if (d > dist[i]) continue;
+    for (const [j, w] of G.adj[i]) { if (blocked[j]) continue; const nd = d + w / speed; if (nd < dist[j]) { dist[j] = nd; push(nd, j); } } }
+  return dist;
+}
+
+const chambers = [
+  { name: "LV", geom: chamber(0.85, 1.35, 0.85, 0.30, 0.0, 0.0, 0.95), apex: [0.30, -1.30, 0.0] },
+  { name: "RV", geom: chamber(0.68, 1.02, 0.58, -0.48, 0.16, 0.30, 0.85), apex: [-0.42, -0.82, 0.32] },
+];
+for (const c of chambers) {
+  c.G = buildGraph(c.geom);
+  const P = c.G.pos, rng = mulberry32(c.name === "LV" ? 11 : 23);
+  // early activation sites: vertices near the apex (simplified Purkinje breakthrough)
+  c.sources = []; for (let i = 0; i < c.G.n; i++) {
+    if (Math.hypot(P[3*i]-c.apex[0], P[3*i+1]-c.apex[1], P[3*i+2]-c.apex[2]) < 0.28) c.sources.push(i); }
+  // fixed pool of fibrosis blob centres (random vertices), plus per-vertex jitter
+  c.blobs = Array.from({ length: 60 }, () => Math.floor(rng() * c.G.n));
+  c.jitter = Float32Array.from({ length: c.G.n }, () => rng());
+  c.isSource = new Uint8Array(c.G.n); for (const s of c.sources) c.isSource[s] = 1;
+  c.geom.setAttribute("color", new THREE.BufferAttribute(new Float32Array(c.geom.attributes.position.count * 3), 3));
+  c.basePos = Float32Array.from(c.geom.attributes.position.array);
+}
+
+function fibrosisMask(c, fraction, heterogeneity) {
+  const n = c.G.n, P = c.G.pos, blocked = new Uint8Array(n);
+  if (fraction <= 0) return blocked;
+  const count = Math.round(55 - 47 * heterogeneity);     // many small patches -> few large ones
+  const r = 0.10 + 0.30 * heterogeneity, inv = 1 / (2 * r * r);
+  const field = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let f = 0; for (let b = 0; b < count; b++) { const j = c.blobs[b];
+      const d2 = (P[3*i]-P[3*j])**2 + (P[3*i+1]-P[3*j+1])**2 + (P[3*i+2]-P[3*j+2])**2;
+      f = Math.max(f, Math.exp(-d2 * inv)); }
+    field[i] = c.isSource[i] ? -1 : f + 0.15 * c.jitter[i] * (1 - heterogeneity);
+  }
+  const sorted = Float32Array.from(field).sort();
+  const thr = sorted[Math.min(n - 1, Math.floor(n * (1 - fraction)))];
+  for (let i = 0; i < n; i++) if (field[i] > thr && !c.isSource[i]) blocked[i] = 1;
+  return blocked;
+}
+
+// Speed calibrated so the young heart activates in TARGET_YOUNG_TAT.
+let SPEED0 = 1;
+function solve(tissue) {
+  const res = { chambers: [], tat: 0, reached: 0, total: 0, fib: 0 };
+  for (const c of chambers) {
+    const blocked = fibrosisMask(c, tissue.fibrosis_fraction, tissue.fibrosis_heterogeneity);
+    const act = dijkstra(c.G, c.sources, blocked, SPEED0 * tissue.conduction_velocity_scale);
+    let n = 0, reach = 0, tat = 0, fib = 0;
+    for (let i = 0; i < c.G.n; i++) { n++; if (blocked[i]) { fib++; continue; }
+      if (isFinite(act[i])) { reach++; tat = Math.max(tat, act[i]); } }
+    res.chambers.push({ blocked, act }); res.tat = Math.max(res.tat, tat);
+    res.reached += reach; res.total += n - fib; res.fib += fib;
+  }
+  res.fibPct = res.fib / (res.total + res.fib);
+  res.reachPct = res.reached / Math.max(1, res.total);
+  res.apd = BASE_APD * tissue.apd_scale;
+  return res;
+}
+{ // calibrate speed on the young heart
+  const t0 = mapToTissue({ motion_dysfunction: 0, nuclear_irregularity: 0, calcium_decay_delay: 0 });
+  SPEED0 = 1; const r = solve(t0); SPEED0 = r.tat / TARGET_YOUNG_TAT;
+}
+const YOUNG_ASV = { motion_dysfunction: 0, nuclear_irregularity: 0, calcium_decay_delay: 0 };
+const YOUNG_T = mapToTissue(YOUNG_ASV), YOUNG_R = solve(YOUNG_T);
+
+// ---------- scene ----------
+const stage = document.getElementById("stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setClearColor(0xffffff, 1);
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+camera.position.set(0.6, 0.4, 7.2);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.target.set(0, -0.1, 0);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd8dde6, 1.6));
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(3, 4, 5); scene.add(key);
+const heart = new THREE.Group(); heart.rotation.z = -0.38; heart.rotation.y = 0.25; scene.add(heart);
+for (const c of chambers) {
+  c.mesh = new THREE.Mesh(c.geom, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.0 }));
+  heart.add(c.mesh);
+}
+const vesselMat = new THREE.MeshStandardMaterial({ color: 0xdcc9c4, roughness: 0.7 });
+const aorta = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.9, 40), vesselMat); aorta.position.set(0.25, 1.30, -0.05); heart.add(aorta);
+const pa = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.23, 0.75, 40), vesselMat); pa.position.set(-0.38, 1.18, 0.36); pa.rotation.z = 0.25; heart.add(pa);
+
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false);
+  renderer.domElement.style.width = w + "px"; renderer.domElement.style.height = h + "px";
+  camera.aspect = w / h; camera.updateProjectionMatrix(); }
+window.addEventListener("resize", resize); resize();
+
+// ---------- colours ----------
+const REST = new THREE.Color("#ecdcd7"), FIB = new THREE.Color("#4a4f5a"), UNREACHED = new THREE.Color("#b9bec8");
+const EXC = new THREE.Color("#c0392b"), REPOL = new THREE.Color("#f0a35e");
+const VIRIDIS = ["#440154","#482878","#3e4989","#31688e","#26828e","#1f9e89","#35b779","#6ece58","#b5de2b","#fde725"].map(h => new THREE.Color(h));
+function viridis(t) { t = Math.min(1, Math.max(0, t)) * (VIRIDIS.length - 1); const i = Math.min(VIRIDIS.length - 2, Math.floor(t));
+  return VIRIDIS[i].clone().lerp(VIRIDIS[i + 1], t - i); }
+
+// ---------- state & UI ----------
+const $ = id => document.getElementById(id);
+let asv = { ...YOUNG_ASV }, tissue = YOUNG_T, result = YOUNG_R, mode = "anim", paused = false, simT = 0, contract = 0;
+const fmt = (v, d = 2) => Number(v).toFixed(d);
+
+function setASV(next, fromAge = false) {
+  asv = { ...next };
+  $("md").value = asv.motion_dysfunction; $("ni").value = asv.nuclear_irregularity; $("cd").value = asv.calcium_decay_delay;
+  $("mdVal").textContent = fmt(asv.motion_dysfunction); $("niVal").textContent = fmt(asv.nuclear_irregularity); $("cdVal").textContent = fmt(asv.calcium_decay_delay);
+  if (!fromAge) { const m = (asv.motion_dysfunction + asv.nuclear_irregularity + asv.calcium_decay_delay) / 3; $("age").value = m; $("ageVal").textContent = fmt(m); }
+  tissue = mapToTissue(asv); result = solve(tissue); renderTables(); if (mode === "map") paintMap();
+}
+
+function renderTables() {
+  const rows = [["Conduction velocity", "conduction_velocity_scale", "×"], ["Action potential", "apd_scale", "×"],
+    ["Ca²⁺ decay", "calcium_decay_scale", "×"], ["Contractility", "contractility_scale", "×"],
+    ["Fibrosis", "fibrosis_fraction", "%"], ["Fibrosis patchiness", "fibrosis_heterogeneity", ""]];
+  $("tissue").tBodies[0].innerHTML = rows.map(([lab, k, u]) => {
+    const f = v => u === "%" ? fmt(100 * v, 0) + "%" : fmt(v); return `<tr><td>${lab}</td><td>${f(YOUNG_T[k])}</td><td>${f(tissue[k])}</td></tr>`; }).join("");
+  const pct = (a, b) => { const d = 100 * (a / b - 1); return `<td class="${d > 0.5 ? "up" : d < -0.5 ? "down" : ""}">${d >= 0 ? "+" : ""}${fmt(d, 0)}%</td>`; };
+  const cvNow = TARGET_YOUNG_TAT / result.tat, cvYoung = TARGET_YOUNG_TAT / YOUNG_R.tat;
+  $("result").tBodies[0].innerHTML = [
+    `<tr><td>Total activation time</td><td>${fmt(YOUNG_R.tat, 0)}</td><td>${fmt(result.tat, 0)}</td>${pct(result.tat, YOUNG_R.tat)}</tr>`,
+    `<tr><td>Effective conduction</td><td>${fmt(cvYoung)}</td><td>${fmt(cvNow)}</td>${pct(cvNow, cvYoung)}</tr>`,
+    `<tr><td>Action potential (APD)</td><td>${fmt(YOUNG_R.apd, 0)}</td><td>${fmt(result.apd, 0)}</td>${pct(result.apd, YOUNG_R.apd)}</tr>`,
+    `<tr><td>Fibrotic surface</td><td>${fmt(100 * YOUNG_R.fibPct, 0)}%</td><td>${fmt(100 * result.fibPct, 0)}%</td><td></td></tr>`,
+    `<tr><td>Tissue reached by wave</td><td>${fmt(100 * YOUNG_R.reachPct, 0)}%</td><td>${fmt(100 * result.reachPct, 0)}%</td><td></td></tr>`,
+  ].join("");
+}
+
+function legend() {
+  if (mode === "map") {
+    const max = Math.max(YOUNG_R.tat, result.tat);
+    $("legend").innerHTML = `<b>Activation time</b> (model ms)<div class="bar" style="background:linear-gradient(90deg,${["#440154","#3e4989","#26828e","#35b779","#fde725"].join(",")})"></div>
+      <div class="ticks"><span>0</span><span>${fmt(max / 2, 0)}</span><span>${fmt(max, 0)}</span></div>
+      <div style="margin-top:4px"><span class="swatch" style="background:#4a4f5a"></span>fibrosis <span class="swatch" style="background:#b9bec8;margin-left:8px"></span>not reached</div>`;
+  } else {
+    $("legend").innerHTML = `<span class="swatch" style="background:#c0392b"></span>depolarised
+      <span class="swatch" style="background:#f0a35e;margin-left:8px"></span>repolarising
+      <span class="swatch" style="background:#ecdcd7;margin-left:8px"></span>resting
+      <span class="swatch" style="background:#4a4f5a;margin-left:8px"></span>fibrosis`;
+  }
+}
+
+function paintMap() {
+  const max = Math.max(YOUNG_R.tat, result.tat);
+  chambers.forEach((c, k) => { const { blocked, act } = result.chambers[k]; const col = c.geom.attributes.color;
+    for (let i = 0; i < col.count; i++) { const u = c.G.uid[i];
+      const cc = blocked[u] ? FIB : !isFinite(act[u]) ? UNREACHED : viridis(act[u] / max); col.setXYZ(i, cc.r, cc.g, cc.b); }
+    col.needsUpdate = true; });
+}
+
+function paintBeat(t) {
+  const apd = result.apd; let depol = 0, cnt = 0;
+  const tmp = new THREE.Color();
+  chambers.forEach((c, k) => { const { blocked, act } = result.chambers[k]; const col = c.geom.attributes.color;
+    for (let i = 0; i < col.count; i++) { const u = c.G.uid[i]; let cc;
+      if (blocked[u]) cc = FIB; else if (!isFinite(act[u])) cc = UNREACHED;
+      else { const ph = t - act[u];
+        if (ph >= 0 && ph < apd) { const x = ph / apd; cc = x < 0.7 ? tmp.copy(EXC).lerp(REPOL, x / 0.7) : tmp.copy(REPOL).lerp(REST, (x - 0.7) / 0.3); }
+        else cc = REST; }
+      col.setXYZ(i, cc.r, cc.g, cc.b); }
+    col.needsUpdate = true;
+    for (let u = 0; u < c.G.n; u++) { if (blocked[u] || !isFinite(act[u])) continue; cnt++; const ph = t - act[u]; if (ph >= 0 && ph < apd) depol++; } });
+  return cnt ? depol / cnt : 0;
+}
+
+function applyContraction(frac, dt) {
+  // contraction follows depolarised fraction; relaxation slowed by calcium decay scale
+  const target = frac * tissue.contractility_scale;
+  const tau = target > contract ? 40 : 90 * tissue.calcium_decay_scale;
+  contract += (target - contract) * (1 - Math.exp(-dt / tau));
+  const s = 1 - 0.07 * contract;
+  for (const c of chambers) { const p = c.geom.attributes.position, b = c.basePos;
+    for (let i = 0; i < p.count; i++) { p.array[3*i] = b[3*i] * s; p.array[3*i+1] = b[3*i+1] * (1 - 0.035 * contract) ; p.array[3*i+2] = b[3*i+2] * s; }
+    p.needsUpdate = true; }
+}
+
+// ---------- wiring ----------
+$("age").addEventListener("input", e => { const a = +e.target.value; $("ageVal").textContent = fmt(a);
+  setASV({ motion_dysfunction: a, nuclear_irregularity: a, calcium_decay_delay: a }, true); });
+for (const [id, k] of [["md", "motion_dysfunction"], ["ni", "nuclear_irregularity"], ["cd", "calcium_decay_delay"]])
+  $(id).addEventListener("input", e => setASV({ ...asv, [k]: +e.target.value }));
+$("speed").addEventListener("input", e => $("speedVal").textContent = fmt(e.target.value, 2) + "×");
+$("modeAnim").onclick = () => { mode = "anim"; $("modeAnim").classList.add("on"); $("modeMap").classList.remove("on"); legend(); };
+$("modeMap").onclick = () => { mode = "map"; $("modeMap").classList.add("on"); $("modeAnim").classList.remove("on"); paintMap(); legend(); };
+$("pause").onclick = () => { paused = !paused; $("pause").textContent = paused ? "Play" : "Pause"; };
+
+function loadDoc(doc, label) {
+  const v = doc.ageing_state_vector || doc;
+  const next = {}; for (const s of SCORES) { const x = Number(v[s]); if (!(x >= 0 && x <= 1)) throw new Error(`${s} missing or outside [0, 1]`); next[s] = x; }
+  setASV(next); $("status").textContent = `Loaded: ${label}`;
+}
+$("loadPipeline").onclick = async () => {
+  try { const r = await fetch("../outputs/phase1_aged_state.json", { cache: "no-store" }); if (!r.ok) throw new Error(r.status);
+    loadDoc(await r.json(), "pipeline output (phase 1, synthetic)"); }
+  catch (e) { $("status").textContent = "Could not load ../outputs/phase1_aged_state.json — use Open JSON…"; }
+};
+$("file").addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return;
+  try { loadDoc(JSON.parse(await f.text()), f.name); } catch (err) { $("status").textContent = "Invalid file: " + err.message; } });
+
+// URL parameter, e.g. ?age=0.7  or  ?md=0.7&ni=0.6&cd=0.65&mode=map
+const q = new URLSearchParams(location.search);
+if (q.has("age")) { const a = Math.min(1, Math.max(0, +q.get("age"))); setASV({ motion_dysfunction: a, nuclear_irregularity: a, calcium_decay_delay: a }); }
+else if (q.has("md") || q.has("ni") || q.has("cd")) setASV({ motion_dysfunction: +(q.get("md") || 0), nuclear_irregularity: +(q.get("ni") || 0), calcium_decay_delay: +(q.get("cd") || 0) });
+else setASV(YOUNG_ASV);
+if (q.get("mode") === "map") $("modeMap").onclick();
+if (q.has("t")) { simT = +q.get("t"); paused = true; $("pause").textContent = "Play"; }
+legend();
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(50, now - last); last = now;
+  if (!paused) simT = (simT + dt * +$("speed").value) % CYCLE;
+  if (mode === "anim") applyContraction(paintBeat(simT), paused ? 1000 : dt * +$("speed").value);
+  else applyContraction(0, 1000);
+  controls.update(); renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__twin = { mapToTissue, get result() { return result; }, get tissue() { return tissue; }, YOUNG_R, setASV };
+</script>
+</body>
+</html>
