@@ -16,7 +16,8 @@ git clone https://github.com/datascintist-abusufian/Cardiac-Ageing-Digital-Twin.
 cd Cardiac-Ageing-Digital-Twin
 pip install -r requirements.txt
 python examples/young_vs_aged.py     # young vs aged simulation + figure
-pytest -q                            # 8 tests
+python examples/phase1_pipeline.py   # raw cell data -> ageing scores -> tissue
+pytest -q                            # 15 tests
 ```
 
 ```python
@@ -43,6 +44,28 @@ Units are dimensionless. The aged scores come from `examples/aged_state_example.
 **illustrative, not measured**. The mapping weights are placeholder assumptions until
 calibrated (roadmap phase 5).
 
+### Phase 1 result: ageing scores from raw cell data
+
+![Ageing State Vector from raw cell data](outputs/phase1_asv.png)
+
+The phase-1 pipeline turns three kinds of raw recording into the three ageing scores:
+
+| Recording | Features measured | Ageing score |
+|---|---|---|
+| Brightfield beating video | rhythm irregularity, contraction / relaxation speed, beat-to-beat amplitude variation | `motion_dysfunction` |
+| Segmented nuclei (e.g. DAPI) | nuclear size and size spread, circularity, solidity | `nuclear_irregularity` |
+| Calcium fluorescence trace | decay time constant (tau), time to 50 % decay | `calcium_decay_delay` |
+
+Each score places a condition between a **young reference** (0) and an **aged positive
+control** such as induced-senescence wells (1). Every score can be traced back to per-feature
+z-scores (`outputs/phase1_report.json`). Senescence markers are never used to build the
+scores, so they stay available as an independent check.
+
+The figure uses **synthetic recordings** (`cadt/synthetic.py`) so the whole pipeline runs
+without data. The extractors are classical, transparent baselines; learned models
+(CardioFlowFormer for motion, NucAgeAI for nuclei) can replace them as long as they return
+the same feature names.
+
 ### Repository layout
 
 | Path | What it does |
@@ -50,8 +73,14 @@ calibrated (roadmap phase 5).
 | `cadt/ageing_state.py` | Ageing State Vector: validation, JSON load / save (`ageing-state/v0.1`) |
 | `cadt/mapping.py` | Rule-based ageing → tissue mapping, with Monte Carlo uncertainty |
 | `cadt/tissue_sim.py` | 2D Aliev–Panfilov tissue model with patchy fibrosis |
-| `examples/young_vs_aged.py` | End-to-end demo; writes `outputs/` |
-| `tests/test_cadt.py` | Checks directions of change, bounds, JSON round-trip, simulation |
+| `cadt/motion.py` | Beating-video features: rhythm, amplitude, contraction / relaxation speed |
+| `cadt/nuclei.py` | Nuclear morphology from segmentation masks |
+| `cadt/calcium.py` | Calcium-transient decay (tau, CD50) |
+| `cadt/scoring.py` | Features → Ageing State Vector (young reference + positive-control anchor) |
+| `cadt/synthetic.py` | Synthetic videos, nuclei and calcium traces for demos and tests |
+| `examples/young_vs_aged.py` | Ageing scores → tissue → simulation demo |
+| `examples/phase1_pipeline.py` | Raw cell data → features → ageing scores → tissue → simulation |
+| `tests/` | 15 tests: feature recovery, directions of change, bounds, JSON round-trip, simulation |
 
 ---
 
@@ -231,7 +260,7 @@ The organ viewer reads this file and sets its matching visual and simulation par
 | Phase | Goal | Status |
 |---|---|---|
 | 0 | This concept document; agree the JSON interface | ✅ Done |
-| 1 | Python pipeline producing an ASV from iPSC-CM motion + nuclear images | ⏳ Planned (ASV schema in place) |
+| 1 | Python pipeline producing an ASV from iPSC-CM motion + nuclear images | 🟡 Classical pipeline done on synthetic data; real recordings and learned models next |
 | 2 | Rule-based ASV → tissue parameter mapping with literature ranges | ✅ First version (placeholder weights) |
 | 3 | Interactive 3D heart viewer with an "age / senescence" slider driven by the JSON file | ⏳ Planned (2D tissue simulation done) |
 | 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios | 🟡 Young-vs-aged 2D comparison done |
