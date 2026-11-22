@@ -1,0 +1,16 @@
+{
+  "schema": "ageing-state/v0.1",
+  "source": "illustrative example, not measured data",
+  "timepoint_days": 60,
+  "ageing_state_vector": {
+    "motion_dysfunction": 0.7,
+    "nuclear_irregularity": 0.6,
+    "calcium_decay_delay": 0.65,
+    "senescence_confidence": 0.7,
+    "sd": {
+      "motion_dysfunction": 0.08,
+      "nuclear_irregularity": 0.1,
+      "calcium_decay_delay": 0.07
+    }
+  }
+}
