@@ -19,7 +19,8 @@ cd Cardiac-Ageing-Digital-Twin
 pip install -r requirements.txt
 python examples/young_vs_aged.py     # young vs aged simulation + figure
 python examples/phase1_pipeline.py   # raw cell data -> ageing scores -> tissue
-pytest -q                            # 16 tests
+python examples/reentry_vulnerability.py   # phase 4, about 4 min (--quick for 1 min)
+pytest -q                            # 19 tests
 # 3D viewer: open viewer/index.html through any local web server, e.g.
 python -m http.server 8000           # then visit http://localhost:8000/viewer/
 ```
@@ -85,6 +86,39 @@ The viewer uses the same mapping rules as `cadt/mapping.py`; a test (`tests/test
 the two copies ever differ. The geometry is a generic, simplified biventricular shape, not
 patient-specific.
 
+### Phase 4: does ageing make tissue more vulnerable to re-entry?
+
+![Re-entry vulnerability](outputs/reentry_vulnerability.png)
+
+**Protocol.** A plane wave (S1) crosses 2D tissue; a premature beat (S2) is delivered at the
+centre a set time after the S1 wave passes. If S2 lands in the recovering tail of S1, it can
+block in one direction and curl into a self-sustaining rotor, the basic mechanism of
+re-entrant arrhythmias such as atrial fibrillation. The **vulnerable window** is the range of
+S2 timings that start sustained re-entry (still active 200 time units later; checked to 500).
+Each condition is repeated over 3 fibrosis layouts.
+
+**What the model shows (current placeholder weights):**
+
+| Condition | Window width | Window range | Wavelength (CV × APD) |
+|---|---|---|---|
+| Young (0) | 12.0 | 26–36 | 28.4 |
+| Aged (0.8) | 12.0 | 30–44 | 25.4 |
+| Slower conduction only | 15.3 | 24–38 | 20.4 |
+| Longer APD only | 10.0 | 32–40 | 35.2 |
+| Fibrosis only | 9.3 | 26–38 | 28.4 |
+
+- Ageing **shifts the window later** (centre about +5.6 units), because aged tissue stays
+  refractory longer, but with the current weights the overall **width does not change** (12 → 12).
+- That is because the ageing changes **pull in opposite directions**: slower conduction widens
+  the window (+28 %, shorter wavelength), while longer APD (−17 %) and fibrosis (−22 %) narrow it.
+- So whether ageing raises re-entry risk depends on the **balance** between conduction slowing
+  and APD prolongation, which is exactly what calibrating the mapping on real data (phase 5)
+  has to pin down. The model makes that question explicit and testable.
+
+Caveats: 2D monolayer, two-variable Aliev–Panfilov model, fibrosis represented only as
+non-conducting obstacles (no fibroblast coupling), window resolution of 2 units. Mechanistic,
+not a clinical risk estimate.
+
 ### Repository layout
 
 | Path | What it does |
@@ -96,11 +130,13 @@ patient-specific.
 | `cadt/nuclei.py` | Nuclear morphology from segmentation masks |
 | `cadt/calcium.py` | Calcium-transient decay (tau, CD50) |
 | `cadt/scoring.py` | Features → Ageing State Vector (young reference + positive-control anchor) |
+| `cadt/reentry.py` | S1–S2 premature-beat protocol, sustained re-entry detection, vulnerable window |
 | `cadt/synthetic.py` | Synthetic videos, nuclei and calcium traces for demos and tests |
 | `examples/young_vs_aged.py` | Ageing scores → tissue → simulation demo |
 | `examples/phase1_pipeline.py` | Raw cell data → features → ageing scores → tissue → simulation |
+| `examples/reentry_vulnerability.py` | Phase 4 experiment: vulnerable window by ageing level and by single ageing change |
 | `viewer/index.html` | Interactive 3D heart viewer (three.js), live on GitHub Pages |
-| `tests/` | 16 tests: feature recovery, directions of change, bounds, JSON round-trip, simulation, viewer rules |
+| `tests/` | 19 tests: feature recovery, directions of change, bounds, JSON round-trip, simulation, viewer rules, re-entry |
 
 ---
 
@@ -283,7 +319,7 @@ The organ viewer reads this file and sets its matching visual and simulation par
 | 1 | Python pipeline producing an ASV from iPSC-CM motion + nuclear images | 🟡 Classical pipeline done on synthetic data; real recordings and learned models next |
 | 2 | Rule-based ASV → tissue parameter mapping with literature ranges | ✅ First version (placeholder weights) |
 | 3 | Interactive 3D heart viewer with an "age / senescence" slider driven by the JSON file | ✅ [Live viewer](https://datascintist-abusufian.github.io/Cardiac-Ageing-Digital-Twin/viewer/) |
-| 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios | 🟡 Young-vs-aged comparison done (2D and 3D); re-entry scenarios next |
+| 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios | ✅ S1–S2 re-entry vulnerability with per-change decomposition |
 | 5 | Validation against held-out senescence markers and electrophysiology data | ⏳ Planned |
 | 6 | Optional: patient-specific geometry from cardiac MRI segmentation | ⏳ Planned |
 
