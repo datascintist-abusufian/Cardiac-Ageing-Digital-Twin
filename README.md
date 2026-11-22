@@ -20,7 +20,8 @@ pip install -r requirements.txt
 python examples/young_vs_aged.py     # young vs aged simulation + figure
 python examples/phase1_pipeline.py   # raw cell data -> ageing scores -> tissue
 python examples/reentry_vulnerability.py   # phase 4, about 4 min (--quick for 1 min)
-pytest -q                            # 19 tests
+python examples/calibration_uncertainty.py # phase 5a, about 5 min (--quick for 2 min)
+pytest -q                            # 24 tests
 # 3D viewer: open viewer/index.html through any local web server, e.g.
 python -m http.server 8000           # then visit http://localhost:8000/viewer/
 ```
@@ -119,6 +120,55 @@ Caveats: 2D monolayer, two-variable Aliev–Panfilov model, fibrosis represented
 non-conducting obstacles (no fibroblast coupling), window resolution of 2 units. Mechanistic,
 not a clinical risk estimate.
 
+### Phase 5a: calibrating the ageing mapping to published data
+
+![Literature calibration and uncertainty](outputs/calibration_uncertainty.png)
+
+The placeholder rules used in phases 0–4 only had plausible *directions*. Phase 5a anchors
+each tissue parameter to published young-vs-old measurements, so that an ageing score of 1
+(the aged positive-control level) reproduces the change seen in old animals, with a
+literature **range** instead of a single number (`cadt/calibration.py`).
+
+| Parameter (old vs young) | Literature value used | Range | Placeholder at ASV = 1 | Evidence |
+|---|---|---|---|---|
+| Conduction velocity | −10 % | 0 to −20 % | −35 % | Rabbit LV: transverse CV 0.348 → 0.280 m/s (−20 %), longitudinal not slowed [1] |
+| Action potential duration | +15 % | 0 to +29 % | +30 % | Rat myocytes APD90 +29 % [2]; rabbit LV APD unchanged (210 vs 206 ms) [1] |
+| Ca²⁺ transient decay | +8 % | 0 to +17 % | +50 % | Rat LV τ 71–73 → 74–84 ms [3]; aged mouse decay not affected [4] |
+| Contractility | 0 % | 0 to −5 % | −40 % | Mouse cell shortening similar [5]; rabbit EF 65 % vs 64 % [1] |
+| Interstitial fibrosis | 2.8 % → 7.0 % | 5–11 % | 2 % → 27 % | Rabbit LV + septum interstitial 2.82 → 6.97 %, total 5.60 → 11.01 % [1] |
+
+The literature is clear that **ageing changes conduction, APD and calcium handling much less,
+and resting contractility hardly at all, compared with the placeholder assumptions**.
+Fibrosis patchiness has no quantitative source and keeps its placeholder rule.
+
+**Re-entry with the calibrated mapping** (phase-4 protocol; 10 draws with every parameter
+sampled from its literature range):
+
+- The vulnerable window **shifts later in all 10 draws** (by 1 to 6 model units, median 3.8):
+  aged tissue needs a later premature beat to start re-entry.
+- The window **width does not change** reliably (median 0; range −1 to +2, about the
+  resolution of the scan).
+- So, with literature-sized ageing changes, this 2D model predicts that ageing **moves** the
+  window rather than **opening** it. It does not, on its own, reproduce the higher VF
+  inducibility seen in old rabbit hearts (7/9 vs 3/12 [1]). That points to mechanisms the
+  model leaves out, such as conduction anisotropy (the transverse-only slowing in [1]),
+  Purkinje remodelling and fibroblast coupling, which are natural next steps.
+
+The live 3D viewer now uses the literature-calibrated mapping by default (switch back to the
+placeholder from the *Mapping* menu, or with `?rules=placeholder`).
+
+**References**
+
+1. Cooper LL, Odening KE, et al. Electromechanical and structural alterations in the aging rabbit heart and aorta. *Am J Physiol Heart Circ Physiol* 2012;302:H1625–35. [doi:10.1152/ajpheart.00960.2011](https://doi.org/10.1152/ajpheart.00960.2011)
+2. Howlett LA. *The age-related reduction in adrenergic response as a limitation of cardiac function in old age.* PhD thesis, University of Leeds, 2022. [etheses.whiterose.ac.uk/32273](https://etheses.whiterose.ac.uk/32273/)
+3. Intracellular Ca²⁺ decline in aged and adult rat hearts. *Am J Physiol Heart Circ Physiol* 2009;297(5):H1594–H1605. [doi:10.1152/ajpheart.00579.2009](https://doi.org/10.1152/ajpheart.00579.2009)
+4. Ca²⁺ transients in adult vs aged mouse ventricular myocytes. *J Physiol* 2017;595(12):3721–3742. [doi:10.1113/JP274134](https://doi.org/10.1113/JP274134)
+5. Ageing in C57BL/6 mouse ventricular myocytes. *Sci Rep* 2020;10:10052. [doi:10.1038/s41598-020-66903-z](https://doi.org/10.1038/s41598-020-66903-z)
+
+Caveats: mixed species (rabbit, rat, mouse), tissues and methods; values describe old animals,
+not iPSC-derived cardiomyocytes; ranges are the spread between studies, not formal confidence
+intervals.
+
 ### Repository layout
 
 | Path | What it does |
@@ -130,13 +180,15 @@ not a clinical risk estimate.
 | `cadt/nuclei.py` | Nuclear morphology from segmentation masks |
 | `cadt/calcium.py` | Calcium-transient decay (tau, CD50) |
 | `cadt/scoring.py` | Features → Ageing State Vector (young reference + positive-control anchor) |
+| `cadt/calibration.py` | Literature table with references, calibrated rule set, sampling within literature ranges |
 | `cadt/reentry.py` | S1–S2 premature-beat protocol, sustained re-entry detection, vulnerable window |
 | `cadt/synthetic.py` | Synthetic videos, nuclei and calcium traces for demos and tests |
 | `examples/young_vs_aged.py` | Ageing scores → tissue → simulation demo |
 | `examples/phase1_pipeline.py` | Raw cell data → features → ageing scores → tissue → simulation |
+| `examples/calibration_uncertainty.py` | Phase 5a: calibrated mapping and re-entry under literature uncertainty |
 | `examples/reentry_vulnerability.py` | Phase 4 experiment: vulnerable window by ageing level and by single ageing change |
 | `viewer/index.html` | Interactive 3D heart viewer (three.js), live on GitHub Pages |
-| `tests/` | 19 tests: feature recovery, directions of change, bounds, JSON round-trip, simulation, viewer rules, re-entry |
+| `tests/` | 24 tests: feature recovery, directions of change, bounds, JSON round-trip, simulation, viewer rules, re-entry, calibration |
 
 ---
 
@@ -320,7 +372,8 @@ The organ viewer reads this file and sets its matching visual and simulation par
 | 2 | Rule-based ASV → tissue parameter mapping with literature ranges | ✅ First version (placeholder weights) |
 | 3 | Interactive 3D heart viewer with an "age / senescence" slider driven by the JSON file | ✅ [Live viewer](https://datascintist-abusufian.github.io/Cardiac-Ageing-Digital-Twin/viewer/) |
 | 4 | Young-vs-aged comparison view with AF / VT re-entry scenarios | ✅ S1–S2 re-entry vulnerability with per-change decomposition |
-| 5 | Validation against held-out senescence markers and electrophysiology data | ⏳ Planned |
+| 5a | Calibrate the mapping to published young-vs-old data, with uncertainty | ✅ Literature-calibrated mapping (5 parameters, 5 sources) |
+| 5b | Validation against held-out senescence markers and electrophysiology data from real iPSC-CM recordings | ⏳ Needs data |
 | 6 | Optional: patient-specific geometry from cardiac MRI segmentation | ⏳ Planned |
 
 ---
