@@ -1,0 +1,440 @@
+{
+  "note": "literature-calibrated mapping (phase 5a); model units; not a clinical risk estimate",
+  "literature": [
+    {
+      "parameter": "conduction_velocity_scale",
+      "target_at_asv_1": 0.9,
+      "range": [
+        0.8,
+        1.0
+      ],
+      "young": 1.0,
+      "evidence": [
+        {
+          "source": "Cooper LL, Odening KE, et al. Electromechanical and structural alterations in the aging rabbit heart and aorta. Am J Physiol Heart Circ Physiol 2012;302:H1625-35. doi:10.1152/ajpheart.00960.2011",
+          "finding": "rabbit LV epicardium, 6-9 mo vs 3.5-6 yr: transverse CV 0.348 -> 0.280 m/s (-20%); longitudinal 0.767 -> 0.828 (no slowing)"
+        },
+        {
+          "source": "Cooper LL, Odening KE, et al. Electromechanical and structural alterations in the aging rabbit heart and aorta. Am J Physiol Heart Circ Physiol 2012;302:H1625-35. doi:10.1152/ajpheart.00960.2011",
+          "finding": "isotropic-equivalent sqrt(CVL x CVT): 0.517 -> 0.481 (-7%)"
+        }
+      ]
+    },
+    {
+      "parameter": "apd_scale",
+      "target_at_asv_1": 1.15,
+      "range": [
+        1.0,
+        1.29
+      ],
+      "young": 1.0,
+      "evidence": [
+        {
+          "source": "Howlett LA. The age-related reduction in adrenergic response as a limitation of cardiac function in old age. PhD thesis, University of Leeds, 2022. https://etheses.whiterose.ac.uk/32273/",
+          "finding": "rat ventricular myocytes, 3 mo vs 22-23 mo: APD90 +29%"
+        },
+        {
+          "source": "Cooper LL, Odening KE, et al. Electromechanical and structural alterations in the aging rabbit heart and aorta. Am J Physiol Heart Circ Physiol 2012;302:H1625-35. doi:10.1152/ajpheart.00960.2011",
+          "finding": "rabbit LV optical APD: 210 vs 206 ms (no change)"
+        }
+      ]
+    },
+    {
+      "parameter": "calcium_decay_scale",
+      "target_at_asv_1": 1.08,
+      "range": [
+        1.0,
+        1.17
+      ],
+      "young": 1.0,
+      "evidence": [
+        {
+          "source": "Intracellular Ca2+ decline in aged and adult rat hearts (Table 1). Am J Physiol Heart Circ Physiol 2009;297(5):H1594-H1605. doi:10.1152/ajpheart.00579.2009",
+          "finding": "rat LV, Ca2+ decline tau: adult 71-73 ms vs aged 74-84 ms (+2% to +17%; mean +8%)"
+        },
+        {
+          "source": "Ca2+ transients in adult vs aged mouse ventricular myocytes (decay rates not affected). J Physiol 2017;595(12):3721-3742. doi:10.1113/JP274134",
+          "finding": "aged mouse myocytes: decay rate not affected"
+        }
+      ]
+    },
+    {
+      "parameter": "contractility_scale",
+      "target_at_asv_1": 1.0,
+      "range": [
+        0.95,
+        1.0
+      ],
+      "young": 1.0,
+      "evidence": [
+        {
+          "source": "Ageing in C57BL/6 mouse ventricular myocytes: contraction amplitudes similar with age. Sci Rep 2020;10:10052. doi:10.1038/s41598-020-66903-z",
+          "finding": "mouse ~12 vs ~24 mo: cell-shortening amplitude similar"
+        },
+        {
+          "source": "Cooper LL, Odening KE, et al. Electromechanical and structural alterations in the aging rabbit heart and aorta. Am J Physiol Heart Circ Physiol 2012;302:H1625-35. doi:10.1152/ajpheart.00960.2011",
+          "finding": "rabbit ejection fraction 65.3% vs 64.2% (unchanged)"
+        }
+      ]
+    },
+    {
+      "parameter": "fibrosis_fraction",
+      "target_at_asv_1": 0.07,
+      "range": [
+        0.05,
+        0.11
+      ],
+      "young": 0.028,
+      "evidence": [
+        {
+          "source": "Cooper LL, Odening KE, et al. Electromechanical and structural alterations in the aging rabbit heart and aorta. Am J Physiol Heart Circ Physiol 2012;302:H1625-35. doi:10.1152/ajpheart.00960.2011",
+          "finding": "rabbit LV + septum interstitial fibrosis 2.82% -> 6.97%; total 5.60% -> 11.01%"
+        }
+      ]
+    }
+  ],
+  "tissue_at_asv_1": {
+    "placeholder": {
+      "conduction_velocity_scale": 0.65,
+      "apd_scale": 1.3,
+      "calcium_decay_scale": 1.5,
+      "contractility_scale": 0.6,
+      "fibrosis_fraction": 0.27,
+      "fibrosis_heterogeneity": 0.8
+    },
+    "literature_v1": {
+      "conduction_velocity_scale": 0.9,
+      "apd_scale": 1.15,
+      "calcium_decay_scale": 1.08,
+      "contractility_scale": 1.0,
+      "fibrosis_fraction": 0.07,
+      "fibrosis_heterogeneity": 0.8
+    }
+  },
+  "windows": {
+    "young": {
+      "couplings": [
+        20.0,
+        22.0,
+        24.0,
+        26.0,
+        28.0,
+        30.0,
+        32.0,
+        34.0,
+        36.0,
+        38.0,
+        40.0,
+        42.0,
+        44.0,
+        46.0,
+        48.0,
+        50.0,
+        52.0,
+        54.0,
+        56.0
+      ],
+      "probability": [
+        0.0,
+        0.0,
+        0.0,
+        0.667,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "width": 11.33,
+      "earliest": 26.0,
+      "latest": 36.0,
+      "wavelength": 28.4
+    },
+    "aged_central": {
+      "couplings": [
+        20.0,
+        22.0,
+        24.0,
+        26.0,
+        28.0,
+        30.0,
+        32.0,
+        34.0,
+        36.0,
+        38.0,
+        40.0,
+        42.0,
+        44.0,
+        46.0,
+        48.0,
+        50.0,
+        52.0,
+        54.0,
+        56.0
+      ],
+      "probability": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.667,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.333,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "width": 12.0,
+      "earliest": 30.0,
+      "latest": 42.0,
+      "wavelength": 29.39
+    },
+    "young_reference_for_draws": {
+      "couplings": [
+        20.0,
+        22.0,
+        24.0,
+        26.0,
+        28.0,
+        30.0,
+        32.0,
+        34.0,
+        36.0,
+        38.0,
+        40.0,
+        42.0,
+        44.0,
+        46.0,
+        48.0,
+        50.0,
+        52.0,
+        54.0,
+        56.0
+      ],
+      "probability": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "width": 12.0,
+      "earliest": 26.0,
+      "latest": 36.0,
+      "wavelength": 28.4
+    }
+  },
+  "uncertainty_draws": [
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.8358,
+        "apd_scale": 1.1856,
+        "calcium_decay_scale": 1.0794,
+        "contractility_scale": 0.9685,
+        "fibrosis_fraction": 0.0713,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 12.0,
+      "centre": 35.0,
+      "wavelength": 28.14
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.9581,
+        "apd_scale": 1.2625,
+        "calcium_decay_scale": 1.0301,
+        "contractility_scale": 0.9826,
+        "fibrosis_fraction": 0.0679,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 12.0,
+      "centre": 37.0,
+      "wavelength": 34.35
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.9934,
+        "apd_scale": 1.2668,
+        "calcium_decay_scale": 1.1081,
+        "contractility_scale": 0.9876,
+        "fibrosis_fraction": 0.0809,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 12.0,
+      "centre": 37.0,
+      "wavelength": 35.73
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.9652,
+        "apd_scale": 1.13,
+        "calcium_decay_scale": 1.0576,
+        "contractility_scale": 0.9639,
+        "fibrosis_fraction": 0.0636,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 11.0,
+      "centre": 33.45,
+      "wavelength": 30.97
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.9052,
+        "apd_scale": 1.125,
+        "calcium_decay_scale": 1.1127,
+        "contractility_scale": 0.9506,
+        "fibrosis_fraction": 0.0769,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 12.0,
+      "centre": 33.0,
+      "wavelength": 28.92
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.873,
+        "apd_scale": 1.0567,
+        "calcium_decay_scale": 1.1011,
+        "contractility_scale": 0.9718,
+        "fibrosis_fraction": 0.068,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 14.0,
+      "centre": 32.0,
+      "wavelength": 26.2
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.8419,
+        "apd_scale": 1.2536,
+        "calcium_decay_scale": 1.1356,
+        "contractility_scale": 0.9803,
+        "fibrosis_fraction": 0.0707,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 12.0,
+      "centre": 37.0,
+      "wavelength": 29.97
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.9894,
+        "apd_scale": 1.1634,
+        "calcium_decay_scale": 1.0736,
+        "contractility_scale": 0.995,
+        "fibrosis_fraction": 0.0692,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 11.0,
+      "centre": 34.55,
+      "wavelength": 32.69
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.9392,
+        "apd_scale": 1.091,
+        "calcium_decay_scale": 1.0445,
+        "contractility_scale": 0.985,
+        "fibrosis_fraction": 0.0637,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 12.0,
+      "centre": 33.0,
+      "wavelength": 29.1
+    },
+    {
+      "tissue": {
+        "conduction_velocity_scale": 0.8986,
+        "apd_scale": 1.1682,
+        "calcium_decay_scale": 1.0321,
+        "contractility_scale": 0.9866,
+        "fibrosis_fraction": 0.0829,
+        "fibrosis_heterogeneity": 0.8
+      },
+      "width": 12.0,
+      "centre": 35.0,
+      "wavelength": 29.81
+    }
+  ],
+  "summary": {
+    "young_width": 11.33,
+    "aged_central_width": 12.0,
+    "aged_central_width_change": 0.67,
+    "aged_central_centre_shift": 4.37,
+    "draws_young_reference_width": 12.0,
+    "draws_width_change": {
+      "median": 0.0,
+      "min": -1.0,
+      "max": 2.0,
+      "fraction_wider": 0.1,
+      "fraction_narrower": 0.2
+    },
+    "draws_centre_shift": {
+      "median": 3.7749999999999986,
+      "min": 1.0,
+      "max": 6.0
+    }
+  },
+  "protocol": {
+    "couplings": [
+      20,
+      22,
+      24,
+      26,
+      28,
+      30,
+      32,
+      34,
+      36,
+      38,
+      40,
+      42,
+      44,
+      46,
+      48,
+      50,
+      52,
+      54,
+      56
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "draws": 10
+  }
+}
